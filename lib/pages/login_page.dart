@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // <-- TAMBAHKAN BARIS INI
 import '../supabase_config.dart';
 import 'dashboard_page.dart';
 
