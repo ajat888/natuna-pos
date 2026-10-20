@@ -154,9 +154,10 @@ class _OrderPageState extends State<OrderPage> {
           builder: (context, setModalState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 16, right: 16, top: 16,
-              ),
+ MediaQuery.padding.bottom
+  bottom: MediaQuery.of(context).viewInsets.bottom + 16, 
+  left: 16, right: 16, top: 16,
+),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
