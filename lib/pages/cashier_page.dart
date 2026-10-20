@@ -107,13 +107,21 @@ class _CashierPageState extends State<CashierPage> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 OutlinedButton(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Fitur Edit segera hadir')),
-                                    );
-                                  },
-                                  child: const Text('Edit'),
-                                ),
+  onPressed: () async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderPage(
+          tableNumber: tx['table_number'],
+          transactionId: tx['id'],
+          initialItems: items,
+        ),
+      ),
+    );
+    _fetchActiveTables();
+  },
+  child: const Text('Edit'),
+),
                                 const SizedBox(width: 8),
                                 ElevatedButton(
   onPressed: () async {

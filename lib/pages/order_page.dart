@@ -5,8 +5,19 @@ import 'cashier_page.dart';
 
 class OrderPage extends StatefulWidget {
   final int tableNumber;
+  /// Null = mode "buat baru", Non-null = mode "edit draft"
+  final int? transactionId;
+  /// Wajib diisi jika [transactionId] tidak null (data dari transaction_items)
+  final List<dynamic>? initialItems;
 
-  const OrderPage({super.key, required this.tableNumber});
+  const OrderPage({
+    super.key,
+    required this.tableNumber,
+    this.transactionId,
+    this.initialItems,
+  });
+
+  bool get isEditing => transactionId != null;
 
   @override
   State<OrderPage> createState() => _OrderPageState();
@@ -21,6 +32,17 @@ class _OrderPageState extends State<OrderPage> {
   @override
   void initState() {
     super.initState();
+    // Pre-fill cart jika mode edit
+    if (widget.isEditing && widget.initialItems != null) {
+      _cart = widget.initialItems!.map((item) {
+        return CartItem(
+          id: item['product_id'],
+          name: item['product_name'],
+          price: double.parse(item['price'].toString()),
+          quantity: item['quantity'] as int,
+        );
+      }).toList();
+    }
     _fetchProducts();
   }
 
@@ -43,7 +65,6 @@ class _OrderPageState extends State<OrderPage> {
     }
   }
 
-  // Fungsi untuk menambah/mengurangi item di keranjang
   void _addToCart(dynamic product) {
     setState(() {
       final index = _cart.indexWhere((item) => item.id == product['id']);
@@ -72,24 +93,44 @@ class _OrderPageState extends State<OrderPage> {
 
   double get _totalAmount => _cart.fold(0, (sum, item) => sum + item.subtotal);
 
-  // Fungsi untuk menyimpan ke Supabase (RPC)
   Future<void> _saveOrder() async {
     if (_cart.isEmpty) return;
 
     setState(() => _isLoading = true);
 
     try {
-      await supabase.rpc('create_transaction', params: {
-        'p_items': _cart.map((e) => e.toMap()).toList(),
-        'p_table_number': widget.tableNumber,
-        'p_payment_method': 'cash',
-      });
+      if (widget.isEditing) {
+        // === UPDATE DRAFT ===
+        await supabase.rpc('update_draft_items', params: {
+  'p_tx_id': widget.transactionId,
+  'p_items': _cart.map((e) => e.toMap()).toList(),
+}); 
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Pesanan Meja ${widget.tableNumber} berhasil disimpan!')),
-        );
-        Navigator.pop(context); // Kembali ke halaman kasir
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Pesanan Meja ${widget.tableNumber} berhasil diperbarui!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true); // return true agar cashier refresh
+        }
+      } else {
+        // === CREATE BARU ===
+        await supabase.rpc('create_transaction', params: {
+          'p_items': _cart.map((e) => e.toMap()).toList(),
+          'p_table_number': widget.tableNumber,
+          'p_payment_method': 'cash',
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Pesanan Meja ${widget.tableNumber} berhasil disimpan!'),
+            ),
+          );
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -101,7 +142,6 @@ class _OrderPageState extends State<OrderPage> {
     }
   }
 
-  // Menampilkan BottomSheet Keranjang (Konfirmasi Pesanan)
   void _showCartBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -120,7 +160,10 @@ class _OrderPageState extends State<OrderPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Konfirmasi Pesanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    widget.isEditing ? 'Update Pesanan' : 'Konfirmasi Pesanan',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 16),
                   if (_cart.isEmpty)
                     const Padding(
@@ -178,16 +221,19 @@ class _OrderPageState extends State<OrderPage> {
                     child: ElevatedButton(
                       onPressed: _cart.isEmpty || _isLoading ? null : () {
                         Navigator.pop(context); // Tutup bottom sheet
-                        _saveOrder(); // Simpan
+                        _saveOrder();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: widget.isEditing ? Colors.orange[700] : const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      child: _isLoading 
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Simpan Pesanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              widget.isEditing ? 'Update Pesanan' : 'Simpan Pesanan',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -202,23 +248,23 @@ class _OrderPageState extends State<OrderPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Ambil daftar kategori unik
     final categories = ['Semua', ..._products.map((p) => p['category'] ?? 'Lainnya').toSet()];
-    final filteredProducts = _selectedCategory == 'Semua' 
-        ? _products 
+    final filteredProducts = _selectedCategory == 'Semua'
+        ? _products
         : _products.where((p) => (p['category'] ?? 'Lainnya') == _selectedCategory).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Meja ${widget.tableNumber}'),
-        backgroundColor: const Color(0xFF2563EB),
+        title: Text(widget.isEditing
+            ? 'Edit Meja ${widget.tableNumber}'
+            : 'Meja ${widget.tableNumber}'),
+        backgroundColor: widget.isEditing ? Colors.orange[700] : const Color(0xFF2563EB),
         foregroundColor: Colors.white,
       ),
       body: _isLoading && _products.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Horizontal List Kategori
                 SizedBox(
                   height: 50,
                   child: ListView.builder(
@@ -242,22 +288,20 @@ class _OrderPageState extends State<OrderPage> {
                     },
                   ),
                 ),
-                
-                // Grid Produk
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.all(16),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // 2 kolom untuk layar HP
+                      crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.8, // Sesuaikan proporsi kartu
+                      childAspectRatio: 0.8,
                     ),
                     itemCount: filteredProducts.length,
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
                       final imageUrl = product['image_url'];
-                      
+
                       return Card(
                         elevation: 2,
                         clipBehavior: Clip.antiAlias,
@@ -266,7 +310,6 @@ class _OrderPageState extends State<OrderPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Gambar Produk
                               Expanded(
                                 child: imageUrl != null && imageUrl.isNotEmpty
                                     ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
@@ -276,7 +319,6 @@ class _OrderPageState extends State<OrderPage> {
                                         child: const Icon(Icons.fastfood, size: 50, color: Colors.grey),
                                       ),
                               ),
-                              // Info Produk
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Column(
@@ -305,14 +347,12 @@ class _OrderPageState extends State<OrderPage> {
                 ),
               ],
             ),
-      
-      // Tombol Keranjang Melayang di Bawah
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _cart.isEmpty
           ? null
           : FloatingActionButton.extended(
               onPressed: _showCartBottomSheet,
-              backgroundColor: Colors.green,
+              backgroundColor: widget.isEditing ? Colors.orange[700] : Colors.green,
               icon: const Icon(Icons.shopping_cart, color: Colors.white),
               label: Text(
                 '${_cart.fold(0, (sum, item) => sum + item.quantity)} Item • Rp ${_totalAmount.toStringAsFixed(0)}',
