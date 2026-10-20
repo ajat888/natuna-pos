@@ -10,7 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  supabase_flutter: ^2.8.0 # <-- Package Supabase ditambahkan di sini
+  supabase_flutter: ^2.8.0
+  image_picker: ^1.1.2  # <--- Tambahkan baris ini
 
 dev_dependencies:
   flutter_test:
