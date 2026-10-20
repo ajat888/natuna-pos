@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../supabase_config.dart';
 import 'login_page.dart';
 import 'add_product_page.dart';
+import 'cashier_page.dart'; // Import halaman kasir baru
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -11,6 +12,55 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  int _currentIndex = 0;
+
+  // Daftar halaman yang akan ditampilkan
+  final List<Widget> _pages = [
+    const _ProductListTab(),
+    const CashierPage(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        selectedItemColor: const Color(0xFF2563EB),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory),
+            label: 'Produk',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.point_of_sale),
+            label: 'Kasir',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// TAB PRODUK (Kode Asli Anda)
+// ==========================================
+class _ProductListTab extends StatefulWidget {
+  const _ProductListTab();
+
+  @override
+  State<_ProductListTab> createState() => _ProductListTabState();
+}
+
+class _ProductListTabState extends State<_ProductListTab> {
   List<dynamic> _products = [];
   bool _isLoading = true;
 
@@ -43,7 +93,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Natuna POS Dashboard'),
+        title: const Text('Daftar Produk'),
         backgroundColor: const Color(0xFF2563EB),
         foregroundColor: Colors.white,
         actions: [
@@ -80,7 +130,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           child: const Icon(Icons.fastfood, color: Colors.blue),
                         ),
                         title: Text(product['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Stok: ${product['stock']}'),
+                        subtitle: Text('Stok: ${product['stock']} | Kategori: ${product['category'] ?? '-'}'),
                         trailing: Text(
                           'Rp ${product['price']}',
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
@@ -95,7 +145,7 @@ class _DashboardPageState extends State<DashboardPage> {
             context,
             MaterialPageRoute(builder: (context) => const AddProductPage()),
           );
-          _fetchProducts(); // Refresh data setelah kembali dari halaman tambah
+          _fetchProducts();
         },
         backgroundColor: const Color(0xFF2563EB),
         child: const Icon(Icons.add, color: Colors.white),
