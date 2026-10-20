@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../supabase_config.dart';
 import 'login_page.dart';
 import 'add_product_page.dart';
-import 'cashier_page.dart'; // Import halaman kasir baru
+import 'cashier_page.dart';
+import 'history_page.dart'; // Import halaman riwayat baru
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -14,10 +15,11 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _currentIndex = 0;
 
-  // Daftar halaman yang akan ditampilkan
+  // Daftar halaman yang akan ditampilkan (tambahkan HistoryPage di sini)
   final List<Widget> _pages = [
     const _ProductListTab(),
     const CashierPage(),
+    const HistoryPage(), 
   ];
 
   @override
@@ -44,6 +46,10 @@ class _DashboardPageState extends State<DashboardPage> {
             icon: Icon(Icons.point_of_sale),
             label: 'Kasir',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history), // Tambahan tab Riwayat
+            label: 'Riwayat',
+          ),
         ],
       ),
     );
@@ -51,7 +57,7 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 // ==========================================
-// TAB PRODUK (Kode Asli Anda)
+// TAB PRODUK
 // ==========================================
 class _ProductListTab extends StatefulWidget {
   const _ProductListTab();
