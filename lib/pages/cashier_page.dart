@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../supabase_config.dart';
 import 'table_picker_dialog.dart';
+import 'order_page.dart';
 
 class CashierPage extends StatefulWidget {
   const CashierPage({super.key});
