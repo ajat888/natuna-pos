@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../supabase_config.dart';
+import 'table_picker_dialog.dart';
 
 class CashierPage extends StatefulWidget {
   const CashierPage({super.key});
@@ -135,11 +136,27 @@ class _CashierPageState extends State<CashierPage> {
                   },
                 ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Buka Dialog Pilih Meja (1-60)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Fitur Pesanan Baru segera hadir')),
+        onPressed: () async {
+          // 1. Ambil daftar nomor meja yang sedang aktif (draft)
+          final List<int> activeTableNumbers = _activeTables
+              .map((tx) => tx['table_number'] as int)
+              .toList();
+
+          // 2. Tampilkan Pop-up Pilih Meja
+          final selectedTable = await showDialog<int>(
+            context: context,
+            builder: (context) => TablePickerDialog(activeTables: activeTableNumbers),
           );
+
+          // 3. Jika user memilih meja (tidak klik Batal)
+          if (selectedTable != null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Membuka menu untuk Meja $selectedTable...')),
+              );
+              // TODO: Nanti kita arahkan ke halaman pemilihan menu (OrderPage) di sini
+            }
+          }
         },
         backgroundColor: const Color(0xFF2563EB),
         icon: const Icon(Icons.add, color: Colors.white),
