@@ -137,32 +137,32 @@ class _CashierPageState extends State<CashierPage> {
                   },
                 ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          // 1. Ambil daftar nomor meja yang sedang aktif (draft)
-          final List<int> activeTableNumbers = _activeTables
-              .map((tx) => tx['table_number'] as int)
-              .toList();
+  onPressed: () async {
+    // 1. Ambil daftar nomor meja yang sedang aktif (draft)
+    final List<int> activeTableNumbers = _activeTables
+        .map((tx) => tx['table_number'] as int)
+        .toList();
 
-          // 2. Tampilkan Pop-up Pilih Meja
-          final selectedTable = await showDialog<int>(
-            context: context,
-            builder: (context) => TablePickerDialog(activeTables: activeTableNumbers),
-          );
-
-          // 3. Jika user memilih meja (tidak klik Batal)
-          if (selectedTable != null) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Membuka menu untuk Meja $selectedTable...')),
-              );
-              // TODO: Nanti kita arahkan ke halaman pemilihan menu (OrderPage) di sini
-            }
-          }
-        },
-        backgroundColor: const Color(0xFF2563EB),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Pesanan Baru', style: TextStyle(color: Colors.white)),
-      ),
+    // 2. Tampilkan Pop-up Pilih Meja
+    final selectedTable = await showDialog<int>(
+      context: context,
+      builder: (context) => TablePickerDialog(activeTables: activeTableNumbers),
     );
-  }
-}
+
+    // 3. Jika user memilih meja (tidak klik Batal)
+    if (selectedTable != null) {
+      // Pindah ke halaman OrderPage
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderPage(tableNumber: selectedTable),
+        ),
+      );
+      // Refresh daftar meja setelah kembali dari halaman menu
+      _fetchActiveTables();
+    }
+  },
+  backgroundColor: const Color(0xFF2563EB),
+  icon: const Icon(Icons.add, color: Colors.white),
+  label: const Text('Pesanan Baru', style: TextStyle(color: Colors.white)),
+),
