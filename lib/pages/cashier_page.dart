@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../supabase_config.dart';
 import 'table_picker_dialog.dart';
 import 'order_page.dart';
+import 'payment_dialog.dart';
 
 class CashierPage extends StatefulWidget {
   const CashierPage({super.key});
@@ -115,17 +116,29 @@ class _CashierPageState extends State<CashierPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Fitur Bayar segera hadir')),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: const Text('Bayar'),
-                                ),
+  onPressed: () async {
+    // Panggil Pop-up Pembayaran
+    final isPaid = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // User harus klik Batal/Konfirmasi
+      builder: (context) => PaymentDialog(
+        transactionId: tx['id'],
+        tableNumber: tx['table_number'],
+        totalAmount: double.parse(tx['total_amount'].toString()),
+      ),
+    );
+
+    // Jika pembayaran berhasil (return true), refresh daftar meja
+    if (isPaid == true) {
+      _fetchActiveTables();
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.green,
+    foregroundColor: Colors.white,
+  ),
+  child: const Text('Bayar'),
+),
                               ],
                             )
                           ],
