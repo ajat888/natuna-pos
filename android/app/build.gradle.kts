@@ -30,8 +30,8 @@ android {
     buildTypes {
         release {
             // Tetap gunakan ini untuk memperkecil ukuran APK
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
