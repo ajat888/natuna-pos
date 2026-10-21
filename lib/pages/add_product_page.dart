@@ -170,14 +170,30 @@ class _AddProductPageState extends State<AddProductPage> {
         'image_url': imageUrl,
       };
 
+      // ====== BAGIAN YANG DIUBAH ======
       if (_isEdit) {
-        await _supabase
+        // Menambahkan .select() untuk mendeteksi jika RLS memblokir
+        final res = await _supabase
             .from('products')
             .update(data)
-            .eq('id', widget.product!.id);
+            .eq('id', widget.product!.id)
+            .select();
+        
+        if (res.isEmpty) {
+          throw Exception('Akses ditolak atau data tidak ditemukan (cek RLS)');
+        }
       } else {
-        await _supabase.from('products').insert(data);
+        // Menambahkan .select() untuk mendeteksi jika RLS memblokir
+        final res = await _supabase
+            .from('products')
+            .insert(data)
+            .select();
+            
+        if (res.isEmpty) {
+          throw Exception('Akses ditolak (cek RLS)');
+        }
       }
+      // =================================
 
       if (!mounted) return;
       Navigator.pop(context, true);

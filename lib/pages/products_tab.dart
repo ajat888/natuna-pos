@@ -100,14 +100,28 @@ class _ProductsTabState extends State<ProductsTab> {
       ),
     );
     if (ok != true) return;
+    
     try {
-      await _supabase.from('products').delete().eq('id', p.id);
-      if (mounted) {
+      // PERUBAHAN DI SINI: Tambahkan .select() untuk mendeteksi RLS
+      final res = await _supabase
+          .from('products')
+          .delete()
+          .eq('id', p.id)
+          .select();
+
+      if (!mounted) return;
+
+      if (res.isEmpty) {
+        // Jika kosong, berarti RLS memblokir atau ID tidak ditemukan
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menghapus: Akses ditolak (cek RLS)')),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Produk dihapus')),
         );
+        _load(); // Refresh grid jika berhasil
       }
-      _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
