@@ -1,169 +1,193 @@
-import 'dart:typed_data';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import '../supabase_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/product.dart';
 
 class AddProductPage extends StatefulWidget {
-  const AddProductPage({super.key});
+  final Product? product; // null = tambah, isi = edit
+  const AddProductPage({super.key, this.product});
 
   @override
   State<AddProductPage> createState() => _AddProductPageState();
 }
 
 class _AddProductPageState extends State<AddProductPage> {
-  final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
-  
-  // List Kategori Default
-  List<String> _categories = ['Makanan', 'Minuman', 'Paket', 'Lainnya'];
-  String? _selectedCategory = 'Makanan';
-  
-  // Variabel untuk Gambar
-  Uint8List? _selectedImageBytes;
-  final ImagePicker _picker = ImagePicker();
-  
-  bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _hppCtrl = TextEditingController();
+
+  String _category = 'Makanan';
+  final _categories = ['Makanan', 'Minuman', 'Snack', 'Lainnya'];
+
+  XFile? _pickedImage;
+  String? _existingImageUrl;
+  bool _saving = false;
+
+  // ==== Validasi nama duplikat ====
+  Timer? _debounce;
+  bool _isNameDuplicate = false;
+  bool _isCheckingName = false;
+
+  final _supabase = Supabase.instance.client;
+  bool get _isEdit => widget.product != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEdit) {
+      final p = widget.product!;
+      _nameCtrl.text = p.name;
+      _priceCtrl.text = _formatRupiah(p.price);
+      _hppCtrl.text = _formatRupiah(p.hpp);
+      _category = _categories.contains(p.category) ? p.category : 'Lainnya';
+      _existingImageUrl = p.imageUrl;
+    }
+    _nameCtrl.addListener(_onNameChanged);
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _priceController.dispose();
+    _debounce?.cancel();
+    _nameCtrl.removeListener(_onNameChanged);
+    _nameCtrl.dispose();
+    _priceCtrl.dispose();
+    _hppCtrl.dispose();
     super.dispose();
   }
 
-  // --- FUNGSI FORMAT HARGA (35.000) ---
+  // ====== Utils format ribuan ======
   String _formatRupiah(int value) {
-    return value.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+    final s = value.toString();
+    final b = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+      b.write(s[i]);
+    }
+    return b.toString();
   }
 
-  void _onPriceChanged(String value) {
-    // Hapus semua titik untuk mendapatkan angka murni
-    String cleanText = value.replaceAll('.', '');
-    if (cleanText.isEmpty) return;
+  int _parseRupiah(String t) => int.tryParse(t.replaceAll('.', '')) ?? 0;
 
-    int? parsed = int.tryParse(cleanText);
-    if (parsed != null) {
-      // Format ulang dengan titik
-      String formatted = _formatRupiah(parsed);
-      
-      // Update controller text tanpa memindahkan kursor ke awal
-      _priceController.value = TextEditingValue(
+  TextInputFormatter _thousandFormatter() {
+    return TextInputFormatter.withFunction((old, neu) {
+      if (neu.text.isEmpty) return neu;
+      final digits = neu.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty) return const TextEditingValue();
+      final formatted = _formatRupiah(int.parse(digits));
+      return TextEditingValue(
         text: formatted,
         selection: TextSelection.collapsed(offset: formatted.length),
       );
-    }
+    });
   }
 
-  // --- FUNGSI PILIH GAMBAR ---
-  Future<void> _pickImage() async {
+  // ====== Cek nama duplikat (debounce 500ms) ======
+  void _onNameChanged() {
+    final value = _nameCtrl.text.trim();
+    _debounce?.cancel();
+
+    if (value.isEmpty) {
+      setState(() {
+        _isNameDuplicate = false;
+        _isCheckingName = false;
+      });
+      return;
+    }
+    // Saat edit dan nama tidak berubah → skip query
+    if (_isEdit && value == widget.product!.name) {
+      setState(() {
+        _isNameDuplicate = false;
+        _isCheckingName = false;
+      });
+      return;
+    }
+
+    setState(() => _isCheckingName = true);
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _checkDuplicate(value);
+    });
+  }
+
+  Future<void> _checkDuplicate(String name) async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80, // Kompres agar upload cepat
-      );
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          _selectedImageBytes = bytes;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memilih gambar: $e')),
-        );
-      }
+      var q = _supabase.from('products').select('id').eq('name', name);
+      if (_isEdit) q = q.neq('id', widget.product!.id);
+      final data = await q.maybeSingle();
+      if (!mounted) return;
+      setState(() {
+        _isNameDuplicate = data != null;
+        _isCheckingName = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isCheckingName = false);
     }
   }
 
-  // --- FUNGSI TAMBAH KATEGORI BARU ---
-  void _addNewCategory() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tambah Kategori Baru'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Nama Kategori',
-            border: OutlineInputBorder(),
-          ),
-          textCapitalization: TextCapitalization.words,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final newCat = controller.text.trim();
-              if (newCat.isNotEmpty && !_categories.contains(newCat)) {
-                setState(() {
-                  _categories.add(newCat);
-                  _selectedCategory = newCat;
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Tambah'),
-          ),
-        ],
-      ),
+  // ====== Upload gambar ======
+  Future<void> _pickImage() async {
+    final f = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
     );
+    if (f != null) setState(() => _pickedImage = f);
   }
 
-  Future<void> _saveProduct() async {
-    if (_nameController.text.isEmpty || _priceController.text.isEmpty) {
+  Future<String?> _uploadImage() async {
+    if (_pickedImage == null) return _existingImageUrl;
+    final bytes = await _pickedImage!.readAsBytes();
+    final ext = _pickedImage!.name.split('.').last;
+    final path = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+    await _supabase.storage.from('product-images').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(contentType: 'image/jpeg'),
+        );
+    return _supabase.storage.from('product-images').getPublicUrl(path);
+  }
+
+  // ====== Simpan ======
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_isNameDuplicate) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama dan Harga wajib diisi!')),
+        const SnackBar(content: Text('Nama produk sudah digunakan')),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
-
+    setState(() => _saving = true);
     try {
-      String? imageUrl;
-
-      // 1. Upload Gambar jika ada
-      if (_selectedImageBytes != null) {
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await supabase.storage.from('product-images').uploadBinary(fileName, _selectedImageBytes!);
-        
-        // 2. Ambil URL Publiknya
-        imageUrl = supabase.storage.from('product-images').getPublicUrl(fileName);
-      }
-
-      // 3. Bersihkan harga dari titik untuk disimpan ke DB
-      String cleanPrice = _priceController.text.replaceAll('.', '');
-
-      // 4. Simpan ke Database
-      await supabase.from('products').insert({
-        'name': _nameController.text.trim(),
-        'price': int.parse(cleanPrice),
-        'stock': 0, // Stok dihardcode 0 karena dihilangkan dari form
-        'category': _selectedCategory,
+      final imageUrl = await _uploadImage();
+      final data = {
+        'name': _nameCtrl.text.trim(),
+        'price': _parseRupiah(_priceCtrl.text),
+        'hpp': _parseRupiah(_hppCtrl.text),
+        'category': _category,
         'image_url': imageUrl,
-      });
+      };
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Produk berhasil ditambahkan!'), backgroundColor: Colors.green),
-        );
-        Navigator.pop(context); 
+      if (_isEdit) {
+        await _supabase
+            .from('products')
+            .update(data)
+            .eq('id', widget.product!.id);
+      } else {
+        await _supabase.from('products').insert(data);
       }
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menambah produk: $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan: $e')),
+      );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -171,127 +195,135 @@ class _AddProductPageState extends State<AddProductPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Produk Baru'),
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
+        title: Text(_isEdit ? 'Edit Produk' : 'Tambah Produk'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            // Nama Produk
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Produk', 
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.fastfood),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Kategori & Tombol +
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    items: _categories.map((cat) {
-                      return DropdownMenuItem(
-                        value: cat,
-                        child: Text(cat),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() => _selectedCategory = val);
-                    },
-                  ),
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ==== Nama Produk ====
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Nama Produk',
+                  border: const OutlineInputBorder(),
+                  errorText: _isNameDuplicate
+                      ? 'Nama produk sudah digunakan'
+                      : null,
+                  suffixIcon: _isCheckingName
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : (_isNameDuplicate
+                          ? const Icon(Icons.error, color: Colors.red)
+                          : null),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  height: 56, // Samakan tinggi dengan TextField
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    tooltip: 'Tambah Kategori',
-                    onPressed: _addNewCategory,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Harga (Auto Format)
-            TextField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              onChanged: _onPriceChanged,
-              decoration: const InputDecoration(
-                labelText: 'Harga (Rp)', 
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.money),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Nama wajib diisi';
+                  }
+                  if (_isNameDuplicate) {
+                    return 'Nama produk sudah digunakan';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-            // Upload Gambar
-            InkWell(
-              onTap: _pickImage,
-              child: Container(
-                height: 150,
-                width: double.infinity,
+              // ==== Harga Jual ====
+              TextFormField(
+                controller: _priceCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [_thousandFormatter()],
+                decoration: const InputDecoration(
+                  labelText: 'Harga Jual (Rp)',
+                  border: OutlineInputBorder(),
+                  prefixText: 'Rp ',
+                ),
+                validator: (v) =>
+                    _parseRupiah(v ?? '') <= 0 ? 'Harga wajib diisi' : null,
+              ),
+              const SizedBox(height: 12),
+
+              // ==== HPP ====
+              TextFormField(
+                controller: _hppCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [_thousandFormatter()],
+                decoration: const InputDecoration(
+                  labelText: 'HPP / Modal (Rp)',
+                  border: OutlineInputBorder(),
+                  prefixText: 'Rp ',
+                  helperText: 'Harga pokok pembelian/harga modal',
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // ==== Kategori ====
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(
+                  labelText: 'Kategori',
+                  border: OutlineInputBorder(),
+                ),
+                items: _categories
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .toList(),
+                onChanged: (v) => setState(() => _category = v!),
+              ),
+              const SizedBox(height: 12),
+
+              // ==== Gambar ====
+              Container(
+                height: 140,
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
                   border: Border.all(color: Colors.grey.shade400),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: _selectedImageBytes != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.memory(
-                          _selectedImageBytes!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.add_photo_alternate, size: 50, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text('Pilih Gambar dari Galeri', style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-              ),
-            ),
-            
-            const SizedBox(height: 32),
-
-            // Tombol Simpan
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveProduct,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                child: InkWell(
+                  onTap: _pickImage,
+                  child: _pickedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            // preview web
+                            _pickedImage!.path,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : (_existingImageUrl != null
+                          ? Image.network(_existingImageUrl!, fit: BoxFit.cover)
+                          : const Center(
+                              child: Icon(Icons.add_a_photo, size: 40),
+                            )),
                 ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('SIMPAN PRODUK', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+
+              // ==== Tombol simpan ====
+              FilledButton(
+                onPressed: _saving || _isNameDuplicate ? null : _save,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_isEdit ? 'Simpan Perubahan' : 'Simpan Produk'),
+              ),
+            ],
+          ),
         ),
       ),
     );
