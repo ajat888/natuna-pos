@@ -5,7 +5,7 @@ plugins {
 }
 android {
     namespace = "com.example.natuna_pos_app"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
