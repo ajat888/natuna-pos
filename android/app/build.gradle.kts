@@ -6,9 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "com.example.natuna_pos_app" // Sesuaikan jika punyamu berbeda
-    compileSdk = 35
-    ndkVersion = "27.0.12077973" // Gunakan NDK standar terbaru
+    namespace = "com.example.natuna_pos_app" // GANTI jika namespace-mu berbeda
+    compileSdk = 36 // KITA KEMBALIKAN KE 36
+    ndkVersion = "28.2.13676358" // SESUAIKAN DENGAN PERMINTAAN SISTEM
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.natuna_pos_app" // Sesuaikan jika punyamu berbeda
+        applicationId = "com.example.natuna_pos_app" // GANTI jika applicationId-mu berbeda
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -29,14 +29,13 @@ android {
 
     buildTypes {
         release {
-            // INI KUNCI UNTUK MEMPERKECIL APK
+            // Tetap gunakan ini untuk memperkecil ukuran APK
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Gunakan debug signing untuk testing
             signingConfig = signingConfigs.getByName("debug")
         }
     }
