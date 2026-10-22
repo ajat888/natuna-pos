@@ -233,10 +233,10 @@ Future<void> _cancelOrder(int transactionId, int tableNumber) async {
             },
           ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final List<int> activeTableNumbers = _activeTables
-              .map((tx) => (tx['table_number'] as num).toInt(),
-              .toList();
+  onPressed: () async {
+    final List<int> activeTableNumbers = _activeTables
+        .map((tx) => (tx['table_number'] as num).toInt()) // ✅ BENAR
+        .toList();
 
           final selectedTable = await showDialog<int>(
             context: context,
