@@ -45,8 +45,9 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // Format tanggal manual tanpa package intl
   String _formatDate(String? isoDate) {
-    if (isoDate == null) return '-';
-    
+  if (isoDate == null || isoDate.isEmpty) return '-';
+  
+  try {
     final date = DateTime.parse(isoDate).toLocal();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     
@@ -57,7 +58,10 @@ class _HistoryPageState extends State<HistoryPage> {
     final minute = date.minute.toString().padLeft(2, '0');
 
     return '$day $month $year, $hour:$minute';
+  } catch (e) {
+    return isoDate.substring(0, 10);
   }
+}
 
   void _showReceipt(dynamic tx) {
     showDialog(
@@ -120,13 +124,15 @@ Row(
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _history.isEmpty
-              ? const Center(child: Text('Belum ada transaksi lunas.'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _history.length,
-                  itemBuilder: (context, index) {
+    ? const Center(child: CircularProgressIndicator())
+    : _history.isEmpty
+        ? const Center(child: Text('Belum ada transaksi lunas.'))
+        : RefreshIndicator(
+            onRefresh: _fetchHistory,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _history.length,
+              itemBuilder: (context, index) {
                     final tx = _history[index];
                     return Card(
                       elevation: 2,

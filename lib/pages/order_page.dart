@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../supabase_config.dart';
 import '../models/cart_item.dart';
-import 'cashier_page.dart';
 
 class OrderPage extends StatefulWidget {
   final int tableNumber;

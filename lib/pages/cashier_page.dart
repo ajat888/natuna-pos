@@ -124,10 +124,12 @@ Future<void> _cancelOrder(int transactionId, int tableNumber) async {
               style: TextStyle(color: Colors.grey),
             ),
           )
-        : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _activeTables.length,
-            itemBuilder: (context, index) {
+        : RefreshIndicator(
+            onRefresh: _fetchActiveTables,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _activeTables.length,
+              itemBuilder: (context, index) {
               final tx = _activeTables[index];
               final items = tx['transaction_items'] as List;
               final total = tx['total_amount'];

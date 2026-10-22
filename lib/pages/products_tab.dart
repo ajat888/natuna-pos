@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/product.dart';
 import 'add_product_page.dart';
-import 'login_page.dart';
 
 class ProductsTab extends StatefulWidget {
   const ProductsTab({super.key});
@@ -177,6 +176,7 @@ class _ProductsTabState extends State<ProductsTab> {
 
   Future<void> _logout() async {
     await _supabase.auth.signOut();
+    
   }
 
   @override
