@@ -51,6 +51,7 @@ void dispose() {                              // ✅ METHOD BARU
           SnackBar(content: Text(e.message), backgroundColor: Colors.red),
         );
       }
+  }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
