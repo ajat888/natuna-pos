@@ -48,14 +48,16 @@ void dispose() {                              // ✅ METHOD BARU
       });
 
       if (mounted) {
-        Navigator.pop(context, true); // Kembalikan nilai true (berhasil)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pembayaran Meja ${widget.tableNumber} Berhasil! Kembalian: Rp ${_change.toStringAsFixed(0)}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        'Pembayaran Meja ${widget.tableNumber} Berhasil! Kembalian: Rp ${_change.toStringAsFixed(0)}',
+      ),
+      backgroundColor: Colors.green,
+    ),
+  );
+  Navigator.pop(context, true);
+}
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
