@@ -34,25 +34,24 @@ void dispose() {                              // ✅ METHOD BARU
     setState(() => _isLoading = true);
 
     try {
-      await supabase.auth.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      if (mounted) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
+  await supabase.auth.signInWithPassword(
+    email: _emailController.text.trim(),
+    password: _passwordController.text.trim(),
   );
-}
-      }
-    } on AuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-        );
-      }
+
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
+    );
   }
-    } catch (e) {
+} on AuthException catch (e) {
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+    );
+  }
+} catch (e) {
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Terjadi kesalahan: $e'), backgroundColor: Colors.red),
