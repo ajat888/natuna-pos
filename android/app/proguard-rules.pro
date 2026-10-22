@@ -1,4 +1,8 @@
-storePassword=Fu-168168
-keyPassword=Fu-168168
-keyAlias=natuna
-storeFile=/data/data/com.termux/files/home/natuna-keys/natuna-release.jks
+# Flutter specific
+-keep class io.flutter.** { *; }
+-keep class io.flutter.plugins.** { *; }
+
+# Keep classes that use reflection (untuk plugin)
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
