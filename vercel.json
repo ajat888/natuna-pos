@@ -1,4 +1,6 @@
 {
+  "buildCommand": "echo \"SUPABASE_URL=$SUPABASE_URL\" > .env && echo \"SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY\" >> .env && flutter build web --release",
+  "outputDirectory": "build/web",
   "rewrites": [
     {
       "source": "/(.*)",

@@ -50,3 +50,6 @@ app.*.map.json
 key.properties
 **/*.keystore
 **/*.jks
+
+# Environment variables
+.env

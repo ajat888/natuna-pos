@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pages/login_page.dart';
 import 'pages/dashboard_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // ✅ tambahkan import di atas
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  await dotenv.load(fileName: ".env"); // ✅ muat file .env dulu
+  
   try {
-    // Pastikan URL diawali dengan https://
     await Supabase.initialize(
-      url: 'https://lobbilgxxggijuepuber.supabase.co', // <--- GANTI DENGAN URL ASLI
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvYmJpbGd4eGdnaWp1ZXB1YmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODI4NjYsImV4cCI6MjEwNzk1ODg2Nn0.OiGZZYmtqH6cuXBRJPNtMtIB4ImcKbH-BUiQJidv1TI',               // <--- GANTI DENGAN ANON KEY ASLI
+      url: dotenv.env['SUPABASE_URL']!,       // ✅ ambil dari .env
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!, // ✅ ambil dari .env
     );
     runApp(const NatunaApp());
   } catch (e) {

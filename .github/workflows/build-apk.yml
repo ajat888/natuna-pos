@@ -26,6 +26,12 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      # ✅ STEP BARU: bikin .env dari secrets
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+
       - name: Decode keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -40,7 +46,7 @@ jobs:
           keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=keystore.jks
           EOF
-          
+
       - name: Build APK
         run: flutter build apk --release --split-per-abi
 
@@ -55,3 +61,4 @@ jobs:
         run: |
           rm -f android/app/keystore.jks
           rm -f android/key.properties
+          rm -f .env   # ✅ tambahan
