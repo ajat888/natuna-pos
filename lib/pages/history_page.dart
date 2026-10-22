@@ -71,27 +71,28 @@ class _HistoryPageState extends State<HistoryPage> {
             const SizedBox(height: 8),
             Text(_formatDate(tx['paid_at'])),
             const Divider(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Total Belanja'),
-                Text('Rp ${tx['total_amount']}'),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Uang Dibayar'),
-                Text('Rp ${tx['amount_paid']}'),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Kembalian'),
-                Text('Rp ${tx['change_amount']}', style: const TextStyle(color: Colors.green)),
-              ],
-            ),
+            // KODE YANG BENAR
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    const Text('Total Belanja'),
+    Text('Rp ${tx['total_amount'] ?? 0}'), 
+  ],
+),
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    const Text('Uang Dibayar'),
+    Text('Rp ${tx['amount_paid'] ?? 0}'), 
+  ],
+),
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    const Text('Kembalian'),
+    Text('Rp ${tx['change_amount'] ?? 0}', style: const TextStyle(color: Colors.green)),
+  ],
+),
           ],
         ),
         actions: [

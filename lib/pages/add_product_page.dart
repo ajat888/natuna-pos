@@ -145,13 +145,20 @@ bool _saving = false;
 }
 
   Future<String?> _uploadImage() async {
-  if (_pickedImageBytes == null) return _existingImageUrl;    // ✅
-  final ext = _pickedImage!.name.split('.').last;
+  if (_pickedImageBytes == null) return _existingImageUrl;
+  
+  final ext = _pickedImage!.name.split('.').last.toLowerCase();
   final path = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+  
+  String contentType = 'image/jpeg'; // default
+  if (ext == 'png') contentType = 'image/png';
+  if (ext == 'webp') contentType = 'image/webp';
+  if (ext == 'gif') contentType = 'image/gif';
+
   await _supabase.storage.from('product-images').uploadBinary(
         path,
-        _pickedImageBytes!,                                    // ✅
-        fileOptions: const FileOptions(contentType: 'image/jpeg'),
+        _pickedImageBytes!,
+        fileOptions: FileOptions(contentType: contentType), 
       );
   return _supabase.storage.from('product-images').getPublicUrl(path);
 }

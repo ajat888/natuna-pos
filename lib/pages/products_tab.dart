@@ -177,13 +177,6 @@ class _ProductsTabState extends State<ProductsTab> {
 
   Future<void> _logout() async {
     await _supabase.auth.signOut();
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-        (Route<dynamic> route) => false,
-      );
-    }
   }
 
   @override

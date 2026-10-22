@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../supabase_config.dart';
+import 'package:flutter/services.dart';
 
 class PaymentDialog extends StatefulWidget {
   final int transactionId;
@@ -27,7 +28,10 @@ void dispose() {                              // ✅ METHOD BARU
   super.dispose();
 }
 
-  double get _cashReceived => double.tryParse(_cashController.text) ?? 0;
+double get _cashReceived {
+  final cleaned = _cashController.text.replaceAll(RegExp(r'[^0-9]'), '');
+  return double.tryParse(cleaned) ?? 0;
+}
   double get _change => _cashReceived - widget.totalAmount;
 
   Future<void> _processPayment() async {
@@ -83,15 +87,18 @@ void dispose() {                              // ✅ METHOD BARU
           ),
           const SizedBox(height: 16),
           TextField(
-            controller: _cashController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Uang Tunai Diterima',
-              border: OutlineInputBorder(),
-              prefixText: 'Rp ',
-            ),
-            onChanged: (value) => setState(() {}),
-          ),
+  controller: _cashController,
+  keyboardType: TextInputType.number,
+  inputFormatters: [
+    FilteringTextInputFormatter.digitsOnly,
+  ],
+  decoration: const InputDecoration(
+    labelText: 'Uang Tunai Diterima',
+    border: OutlineInputBorder(),
+    prefixText: 'Rp ',
+  ),
+  onChanged: (value) => setState(() {}),
+),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

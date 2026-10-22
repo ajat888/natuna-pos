@@ -40,13 +40,10 @@ void dispose() {                              // ✅ METHOD BARU
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DashboardPage()),
-        );
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Login Berhasil!'), backgroundColor: Colors.green),
+  );
+}
       }
     } on AuthException catch (e) {
       if (mounted) {
