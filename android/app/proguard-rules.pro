@@ -6,3 +6,7 @@
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
+
+# Aturan tambahan agar R8 tidak menghapus class Google Play
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
