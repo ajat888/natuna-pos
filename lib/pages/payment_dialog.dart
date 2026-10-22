@@ -18,8 +18,14 @@ class PaymentDialog extends StatefulWidget {
 }
 
 class _PaymentDialogState extends State<PaymentDialog> {
-  final TextEditingController _cashController = TextEditingController();
-  bool _isLoading = false;
+final TextEditingController _cashController = TextEditingController();
+bool _isLoading = false;
+
+@override
+void dispose() {                              // ✅ METHOD BARU
+  _cashController.dispose();
+  super.dispose();
+}
 
   double get _cashReceived => double.tryParse(_cashController.text) ?? 0;
   double get _change => _cashReceived - widget.totalAmount;

@@ -187,26 +187,41 @@ Future<void> _cancelOrder(int transactionId, int tableNumber) async {
                               ),
                               const SizedBox(width: 8),
                               ElevatedButton(
-                                onPressed: () async {
-                                  final isPaid = await showDialog<bool>(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (context) => PaymentDialog(
-                                      transactionId: tx['id'],
-                                      tableNumber: tx['table_number'],
-                                      totalAmount: double.parse(tx['total_amount'].toString()),
-                                    ),
-                                  );
-                                  if (isPaid == true) {
-                                    _fetchActiveTables();
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text('Bayar'),
-                              ),
+  onPressed: () async {
+    final totalRaw = tx['total_amount'];
+    final total = totalRaw is num
+        ? totalRaw.toDouble()
+        : double.tryParse(totalRaw?.toString() ?? '') ?? 0;
+
+    if (total <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data transaksi tidak valid. Hubungi admin.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final isPaid = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PaymentDialog(
+        transactionId: tx['id'],
+        tableNumber: tx['table_number'] as num,
+        totalAmount: total,
+      ),
+    );
+    if (isPaid == true) {
+      _fetchActiveTables();
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.green,
+    foregroundColor: Colors.white,
+  ),
+  child: const Text('Bayar'),
+),
                             ],
                           ),
                         ],

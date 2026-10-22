@@ -11,10 +11,17 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isObscure = true;
-  bool _isLoading = false;
+final TextEditingController _emailController = TextEditingController();
+final TextEditingController _passwordController = TextEditingController();
+bool _isObscure = true;
+bool _isLoading = false;
+
+@override
+void dispose() {                              // ✅ METHOD BARU
+  _emailController.dispose();
+  _passwordController.dispose();
+  super.dispose();
+}
 
   Future<void> _handleLogin() async {
     if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {

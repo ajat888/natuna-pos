@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/product.dart';
+import 'dart:typed_data';
 
 class AddProductPage extends StatefulWidget {
   final Product? product; // null = tambah, isi = edit
@@ -22,9 +23,10 @@ class _AddProductPageState extends State<AddProductPage> {
   String _category = 'Makanan';
   final _categories = ['Makanan', 'Minuman', 'Snack', 'Lainnya'];
 
-  XFile? _pickedImage;
-  String? _existingImageUrl;
-  bool _saving = false;
+XFile? _pickedImage;
+Uint8List? _pickedImageBytes;                   // ✅ TAMBAHKAN BARIS INI
+String? _existingImageUrl;
+bool _saving = false;
 
   // ==== Validasi nama duplikat ====
   Timer? _debounce;
@@ -129,25 +131,30 @@ class _AddProductPageState extends State<AddProductPage> {
 
   // ====== Upload gambar ======
   Future<void> _pickImage() async {
-    final f = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
-    );
-    if (f != null) setState(() => _pickedImage = f);
-  }
+  final f = await ImagePicker().pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 70,
+  );
+  if (f == null) return;
+  final bytes = await f.readAsBytes();
+  if (!mounted) return;
+  setState(() {
+    _pickedImage = f;
+    _pickedImageBytes = bytes;                  // ✅ simpan bytes
+  });
+}
 
   Future<String?> _uploadImage() async {
-    if (_pickedImage == null) return _existingImageUrl;
-    final bytes = await _pickedImage!.readAsBytes();
-    final ext = _pickedImage!.name.split('.').last;
-    final path = '${DateTime.now().millisecondsSinceEpoch}.$ext';
-    await _supabase.storage.from('product-images').uploadBinary(
-          path,
-          bytes,
-          fileOptions: const FileOptions(contentType: 'image/jpeg'),
-        );
-    return _supabase.storage.from('product-images').getPublicUrl(path);
-  }
+  if (_pickedImageBytes == null) return _existingImageUrl;    // ✅
+  final ext = _pickedImage!.name.split('.').last;
+  final path = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+  await _supabase.storage.from('product-images').uploadBinary(
+        path,
+        _pickedImageBytes!,                                    // ✅
+        fileOptions: const FileOptions(contentType: 'image/jpeg'),
+      );
+  return _supabase.storage.from('product-images').getPublicUrl(path);
+}
 
   // ====== Simpan ======
   Future<void> _save() async {
@@ -306,15 +313,14 @@ class _AddProductPageState extends State<AddProductPage> {
                 ),
                 child: InkWell(
                   onTap: _pickImage,
-                  child: _pickedImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            // preview web
-                            _pickedImage!.path,
-                            fit: BoxFit.cover,
-                          ),
-                        )
+                  child: _pickedImageBytes != null
+    ? ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          _pickedImageBytes!,
+          fit: BoxFit.cover,
+        ),
+      )
                       : (_existingImageUrl != null
                           ? Image.network(_existingImageUrl!, fit: BoxFit.cover)
                           : const Center(

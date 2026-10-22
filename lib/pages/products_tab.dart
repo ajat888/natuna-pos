@@ -34,25 +34,27 @@ class _ProductsTabState extends State<ProductsTab> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final data = await _supabase
-          .from('products')
-          .select()
-          .order('name', ascending: true); // A-Z
-      setState(() {
-        _all = (data as List).map((e) => Product.fromMap(e)).toList();
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat produk: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+  if (!mounted) return;
+  setState(() => _loading = true);
+  try {
+    final data = await _supabase
+        .from('products')
+        .select()
+        .order('name', ascending: true);
+    if (!mounted) return;
+    setState(() {
+      _all = (data as List).map((e) => Product.fromMap(e)).toList();
+    });
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat produk: $e')),
+      );
     }
+  } finally {
+    if (mounted) setState(() => _loading = false);
   }
+}
 
   List<Product> get _filtered {
     final q = _searchCtrl.text.trim().toLowerCase();
