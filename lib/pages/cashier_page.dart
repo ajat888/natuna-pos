@@ -208,7 +208,7 @@ Future<void> _cancelOrder(int transactionId, int tableNumber) async {
       barrierDismissible: false,
       builder: (context) => PaymentDialog(
         transactionId: tx['id'],
-        tableNumber: tx['table_number'] as num,
+        tableNumber: (tx['table_number'] as num).toInt(),
         totalAmount: total,
       ),
     );
@@ -235,7 +235,7 @@ Future<void> _cancelOrder(int transactionId, int tableNumber) async {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final List<int> activeTableNumbers = _activeTables
-              .map((tx) => tx['table_number'] as int)
+              .map((tx) => (tx['table_number'] as num).toInt(),
               .toList();
 
           final selectedTable = await showDialog<int>(
