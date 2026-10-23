@@ -43,25 +43,20 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
-  // Format tanggal manual tanpa package intl
   String _formatDate(String? isoDate) {
-  if (isoDate == null || isoDate.isEmpty) return '-';
-  
-  try {
-    final date = DateTime.parse(isoDate).toLocal();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    
-    final day = date.day.toString().padLeft(2, '0');
-    final month = months[date.month - 1];
-    final year = date.year;
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-
-    return '$day $month $year, $hour:$minute';
-  } catch (e) {
-    return isoDate.substring(0, 10);
+    if (isoDate == null || isoDate.isEmpty) return '-';
+    try {
+      final date = DateTime.parse(isoDate).toLocal();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      final day = date.day.toString().padLeft(2, '0');
+      final month = months[date.month - 1];
+      final hour = date.hour.toString().padLeft(2, '0');
+      final minute = date.minute.toString().padLeft(2, '0');
+      return '$day $month ${date.year}, $hour:$minute';
+    } catch (e) {
+      return isoDate.length >= 10 ? isoDate.substring(0, 10) : isoDate;
+    }
   }
-}
 
   void _showReceipt(dynamic tx) {
     showDialog(
@@ -71,32 +66,33 @@ class _HistoryPageState extends State<HistoryPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Meja ${tx['table_number']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('Meja ${tx['table_number']}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 8),
             Text(_formatDate(tx['paid_at'])),
             const Divider(),
-            // KODE YANG BENAR
-Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    const Text('Total Belanja'),
-    Text('Rp ${tx['total_amount'] ?? 0}'), 
-  ],
-),
-Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    const Text('Uang Dibayar'),
-    Text('Rp ${tx['amount_paid'] ?? 0}'), 
-  ],
-),
-Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    const Text('Kembalian'),
-    Text('Rp ${tx['change_amount'] ?? 0}', style: const TextStyle(color: Colors.green)),
-  ],
-),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Total Belanja'),
+                Text('Rp ${tx['total_amount'] ?? 0}'),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Uang Dibayar'),
+                Text('Rp ${tx['amount_paid'] ?? 0}'),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Kembalian'),
+                Text('Rp ${tx['change_amount'] ?? 0}',
+                    style: const TextStyle(color: Colors.green)),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -124,33 +120,38 @@ Row(
         ],
       ),
       body: _isLoading
-    ? const Center(child: CircularProgressIndicator())
-    : _history.isEmpty
-        ? const Center(child: Text('Belum ada transaksi lunas.'))
-        : RefreshIndicator(
-            onRefresh: _fetchHistory,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _history.length,
-              itemBuilder: (context, index) {
-                final tx = _history[index];
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    onTap: () => _showReceipt(tx),
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.green,
-                      child: Icon(Icons.check, color: Colors.white),
-                    ),
-                    title: Text('Meja ${tx['table_number']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(_formatDate(tx['paid_at'])),
-                    trailing: Text(
-                      'Rp ${tx['total_amount']}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-                    ),
+          ? const Center(child: CircularProgressIndicator())
+          : _history.isEmpty
+              ? const Center(child: Text('Belum ada transaksi lunas.'))
+              : RefreshIndicator(
+                  onRefresh: _fetchHistory,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _history.length,
+                    itemBuilder: (context, index) {
+                      final tx = _history[index];
+                      return Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          onTap: () => _showReceipt(tx),
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.green,
+                            child: Icon(Icons.check, color: Colors.white),
+                          ),
+                          title: Text('Meja ${tx['table_number']}',
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(_formatDate(tx['paid_at'])),
+                          trailing: Text(
+                            'Rp ${tx['total_amount']}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-          ),
+                ),
+    );
+  }
+}
