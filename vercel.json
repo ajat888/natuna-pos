@@ -1,5 +1,5 @@
 {
-  "buildCommand": "echo \"SUPABASE_URL=$SUPABASE_URL\" > .env && echo \"SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY\" >> .env && ./flutter/bin/flutter build web --release",
+  "buildCommand": "printf 'SUPABASE_URL=%s\\nSUPABASE_ANON_KEY=%s\\n' \"$SUPABASE_URL\" \"$SUPABASE_ANON_KEY\" > .env && cat .env && ./flutter/bin/flutter build web --release",
   "outputDirectory": "build/web",
   "rewrites": [
     {

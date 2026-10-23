@@ -7,16 +7,38 @@ import 'package:flutter_dotenv/flutter_dotenv.dart'; // ✅ tambahkan import di 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await dotenv.load(fileName: ".env"); // ✅ muat file .env dulu
+  await dotenv.load(fileName: ".env");
   
-  try {
-    await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL']!,       // ✅ ambil dari .env
-      anonKey: dotenv.env['SUPABASE_ANON_KEY']!, // ✅ ambil dari .env
-    );
-    runApp(const NatunaApp());
-  } catch (e) {
-    // Jika koneksi ke Supabase gagal, tampilkan layar error alih-alih layar hitam
+final supabaseUrl = dotenv.env['SUPABASE_URL'];
+final supabaseKey = dotenv.env['SUPABASE_ANON_KEY'];
+
+if (supabaseUrl == null || supabaseUrl.isEmpty ||
+    supabaseKey == null || supabaseKey.isEmpty) {
+  runApp(MaterialApp(
+    home: Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Konfigurasi .env belum lengkap.\n'
+            'Pastikan SUPABASE_URL & SUPABASE_ANON_KEY terisi di Environment Variables Vercel.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      ),
+    ),
+  ));
+  return;
+}
+
+try {
+  await Supabase.initialize(
+    url: supabaseUrl,        
+    anonKey: supabaseKey,    
+  );
+  runApp(const NatunaApp());
+} catch (e) {
     runApp(MaterialApp(
       home: Scaffold(
         body: Center(
