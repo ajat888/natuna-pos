@@ -133,26 +133,24 @@ Row(
               padding: const EdgeInsets.all(16),
               itemCount: _history.length,
               itemBuilder: (context, index) {
-                    final tx = _history[index];
-                    return Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        onTap: () => _showReceipt(tx),
-                        leading: const CircleAvatar(
-                          backgroundColor: Colors.green,
-                          child: Icon(Icons.check, color: Colors.white),
-                        ),
-                        title: Text('Meja ${tx['table_number']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(_formatDate(tx['paid_at'])),
-                        trailing: Text(
-                          'Rp ${tx['total_amount']}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-    );
-  }
-}
+                final tx = _history[index];
+                return Card(
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    onTap: () => _showReceipt(tx),
+                    leading: const CircleAvatar(
+                      backgroundColor: Colors.green,
+                      child: Icon(Icons.check, color: Colors.white),
+                    ),
+                    title: Text('Meja ${tx['table_number']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(_formatDate(tx['paid_at'])),
+                    trailing: Text(
+                      'Rp ${tx['total_amount']}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),

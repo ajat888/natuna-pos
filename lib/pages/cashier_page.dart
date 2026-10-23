@@ -207,32 +207,126 @@ Future<void> _cancelOrder(int transactionId, int tableNumber) async {
 
     final isPaid = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => PaymentDialog(
-        transactionId: tx['id'],
-        tableNumber: (tx['table_number'] as num).toInt(),
-        totalAmount: total,
-      ),
-    );
-    if (isPaid == true) {
-      _fetchActiveTables();
-    }
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.green,
-    foregroundColor: Colors.white,
-  ),
-  child: const Text('Bayar'),
-),
-                            ],
-                          ),
-                        ],
-                      )
-                    ],
+body: _isLoading
+    ? const Center(child: CircularProgressIndicator())
+    : _activeTables.isEmpty
+        ? const Center(
+            child: Text(
+              'Belum ada pesanan aktif.\nKlik tombol + untuk membuat pesanan baru.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          )
+        : RefreshIndicator(
+            onRefresh: _fetchActiveTables,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _activeTables.length,
+              itemBuilder: (context, index) {
+                final tx = _activeTables[index];
+                final items = tx['transaction_items'] as List;
+                final total = tx['total_amount'];
+
+                return Card(
+                  elevation: 3,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Meja ${tx['table_number']}',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Rp $total',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('${items.length} macam item'),
+                        const Divider(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => _cancelOrder(tx['id'], tx['table_number']),
+                              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                              label: const Text('Batal', style: TextStyle(color: Colors.red)),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                OutlinedButton(
+                                  onPressed: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => OrderPage(
+                                          tableNumber: tx['table_number'],
+                                          transactionId: tx['id'],
+                                          initialItems: items,
+                                        ),
+                                      ),
+                                    );
+                                    _fetchActiveTables();
+                                  },
+                                  child: const Text('Edit'),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    final totalRaw = tx['total_amount'];
+                                    final total = totalRaw is num
+                                        ? totalRaw.toDouble()
+                                        : double.tryParse(totalRaw?.toString() ?? '') ?? 0;
+
+                                    if (total <= 0) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Data transaksi tidak valid. Hubungi admin.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    final isPaid = await showDialog<bool>(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) => PaymentDialog(
+                                        transactionId: tx['id'],
+                                        tableNumber: (tx['table_number'] as num).toInt(),
+                                        totalAmount: total,
+                                      ),
+                                    );
+                                    if (isPaid == true) {
+                                      _fetchActiveTables();
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Bayar'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
       floatingActionButton: FloatingActionButton.extended(
   onPressed: () async {
